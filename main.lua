@@ -1,4 +1,4 @@
--- main.lua - Plugin API Fetcher com Tela de Loading Simples
+
 local DataStorage = require("datastorage")
 local Dispatcher = require("dispatcher")
 local InfoMessage = require("ui/widget/infomessage")
@@ -15,7 +15,6 @@ local ApiFetcher = WidgetContainer:extend {
     is_doc_only = false,
 }
 
--- CONFIGURAÇÃO DA API
 local API_DOMAIN = "opentgc.com"
 
 function ApiFetcher:onDispatcherRegisterActions()
@@ -53,7 +52,7 @@ function ApiFetcher:showInputDialog()
         buttons = {
             {
                 {
-                    text = _("Cancelar"),
+                    text = _("Cancel"),
                     id = "close",
                     callback = function()
                         UIManager:close(input_dialog)
@@ -86,7 +85,7 @@ function ApiFetcher:showLoadingMessage(text)
     self:closeLoadingMessage()
     self.loading_message = InfoMessage:new {
         text = text,
-        timeout = 0, -- Não fecha automaticamente
+        timeout = 0,
     }
     UIManager:show(self.loading_message)
     UIManager:forceRePaint()
@@ -113,7 +112,6 @@ function ApiFetcher:closeLoadingMessage()
 end
 
 function ApiFetcher:fetchAndDisplayPost(post_id)
-    -- Verificar conexão
     if not NetworkMgr:isOnline() then
         self:closeLoadingMessage()
         UIManager:show(InfoMessage:new {
@@ -126,7 +124,6 @@ function ApiFetcher:fetchAndDisplayPost(post_id)
 
     self:updateLoadingMessage(_("Connecting to the server...\n\nPlease wait..."))
 
-    -- Fazer requisição HTTP
     local url = string.format("https://%s/api/posts/%s", API_DOMAIN, post_id)
     logger.info("OpenTGC: Searching for URL:", url)
 
@@ -167,7 +164,6 @@ function ApiFetcher:fetchAndDisplayPost(post_id)
 
     self:updateLoadingMessage(_("Processing response...\n\nDecoding JSON..."))
 
-    -- Parse JSON
     local response_text = table.concat(response_body)
     logger.info("OpenTGC: Response received, size:", #response_text)
 
@@ -192,7 +188,6 @@ function ApiFetcher:fetchAndDisplayPost(post_id)
     logger.info("OpenTGC: Post received successfully.")
     self:updateLoadingMessage(_("Downloading images...\n\nPlease wait...."))
 
-    -- Pequeno delay para mostrar a mensagem
     UIManager:scheduleIn(0.1, function()
         self:createAndOpenHtml(post_data)
     end)
@@ -283,7 +278,6 @@ function ApiFetcher:downloadMarkdownImages(markdown, dir)
     local index = 1
     local total = 0
 
-    -- Contar quantas imagens existem
     for _ in markdown:gmatch("!%[.-%]%((.-)%)") do
         total = total + 1
     end
@@ -365,7 +359,6 @@ function ApiFetcher:createAndOpenHtml(post_data)
 
     self:updateLoadingMessage(_("Creating directories..."))
 
-    -- Diretório do post
     local base_dir = DataStorage:getDataDir() .. "/opentgc"
     local post_dir = base_dir .. "/" .. post_id
 
@@ -376,15 +369,12 @@ function ApiFetcher:createAndOpenHtml(post_data)
 
     local markdown = post_data.text or "No content"
 
-    -- baixar imagens do markdown
     local images = self:downloadMarkdownImages(markdown, post_dir)
 
     self:updateLoadingMessage(_("Processing markdown..."))
 
-    -- reescrever markdown para paths locais
     markdown = self:rewriteMarkdownImages(markdown, images)
 
-    -- converter para HTML
     local html_body = self:markdownToHtml(markdown)
 
     local cover_img_html = ""
@@ -410,7 +400,6 @@ function ApiFetcher:createAndOpenHtml(post_data)
         end
     end
 
-    -- Criar HTML
     local html_content = string.format([[
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -505,7 +494,6 @@ function ApiFetcher:createAndOpenHtml(post_data)
 
     self:updateLoadingMessage(_("Completed!\n\nOpening document..."))
 
-    -- Fechar loading e abrir documento
     UIManager:scheduleIn(0.5, function()
         self:closeLoadingMessage()
 
@@ -514,7 +502,6 @@ function ApiFetcher:createAndOpenHtml(post_data)
             timeout = 1,
         })
 
-        -- Abrir documento
         UIManager:scheduleIn(0.3, function()
             if self.ui and self.ui.document then
                 self.ui:closeDocument()
